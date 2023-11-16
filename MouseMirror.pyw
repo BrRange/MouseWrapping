@@ -1,7 +1,9 @@
 try:
     import pynput
 except ModuleNotFoundError:
-    pip.main(["install", "pynput"])
+    import pip
+    pip.main(['install', 'pynput'])
+    import pynput
 import ctypes, time
 
 user = ctypes.windll.user32
