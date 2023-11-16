@@ -12,7 +12,6 @@ mouse = pynput.mouse.Controller()
 
 def mirror():
     while True:
-        print(mouse.position)
         try:
             if mouse.position[0] == 0 or mouse.position[0] == screen[0] - 1:
                 mouse.position = [[screen[0] - 2, 1][mouse.position[0] != 0], mouse.position[1]]
