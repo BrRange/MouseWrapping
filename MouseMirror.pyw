@@ -1,10 +1,13 @@
+import ctypes, time
+
+async def importCheck():
+    import pip
+    await pip.main(['install', 'pynput'])
 try:
     import pynput
 except ModuleNotFoundError:
-    import pip
-    pip.main(['install', 'pynput'])
+    importCheck()
     import pynput
-import ctypes, time
 
 user = ctypes.windll.user32
 screen = user.GetSystemMetrics(0), user.GetSystemMetrics(1)
@@ -21,4 +24,5 @@ def mirror():
         except:
             time.sleep(5)
             mirror()
+
 mirror()
