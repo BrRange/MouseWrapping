@@ -1,28 +1,39 @@
-import ctypes, time
+import ctypes, time;
 
+goodToGo = True;
 async def importCheck():
-    import pip
-    await pip.main(['install', 'pynput'])
+    import pip;
+    await pip.main(['install', 'pynput']);
+    goodToGo = True;
 try:
-    import pynput
+    import pynput;
 except ModuleNotFoundError:
-    importCheck()
-    import pynput
+    goodToGo = False;
+    importCheck();
+    while not goodToGo:
+        time.sleep(5);
+    import pynput;
 
-user = ctypes.windll.user32
-screen = user.GetSystemMetrics(0), user.GetSystemMetrics(1)
-mouse = pynput.mouse.Controller()
+user = ctypes.windll.user32;
+screen = user.GetSystemMetrics(0), user.GetSystemMetrics(1);
+mouse = pynput.mouse.Controller();
+global pressCount;
+pressCount = [0];
 
-def mirror():
-    while True:
-        try:
-            if mouse.position[0] == 0 or mouse.position[0] == screen[0] - 1:
-                mouse.position = [[screen[0] - 2, 1][mouse.position[0] != 0], mouse.position[1]]
-            if mouse.position[1] == 0 or mouse.position[1] == screen[1] - 1:
-                mouse.position = [mouse.position[0], [screen[1] - 2, 1][mouse.position[1] != 0]]
-            time.sleep(1/100)
-        except:
-            time.sleep(5)
-            mirror()
+def appendPresses(x, y, button, isPressed):
+    if isPressed:
+        pressCount[0] += 1;
+    else:
+        pressCount[0] -= 1;
 
-mirror()
+mouseEar = pynput.mouse.Listener(on_click=appendPresses);
+mouseEar.start();
+
+while True:
+    x: int = mouse.position[0];
+    y: int = mouse.position[1];
+    if x == 0 and pressCount[0] == 0: mouse.position = (screen[0] - 2, y);
+    elif x == screen[0] - 1 and pressCount[0] == 0: mouse.position = (1, y);
+    if y == 0 and pressCount[0] == 0: mouse.position = (x, screen[1] - 2);
+    elif y == screen[1] - 1 and pressCount[0] == 0: mouse.position = (x, 1);
+    time.sleep(0.01);
