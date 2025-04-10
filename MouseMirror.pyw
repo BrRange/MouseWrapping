@@ -30,10 +30,11 @@ mouseEar = pynput.mouse.Listener(on_click=appendPresses);
 mouseEar.start();
 
 while True:
-    x: int = mouse.position[0];
-    y: int = mouse.position[1];
-    if x == 0 and pressCount[0] == 0: mouse.position = (screen[0] - 2, y);
-    elif x == screen[0] - 1 and pressCount[0] == 0: mouse.position = (1, y);
-    if y == 0 and pressCount[0] == 0: mouse.position = (x, screen[1] - 2);
-    elif y == screen[1] - 1 and pressCount[0] == 0: mouse.position = (x, 1);
+    if pressCount[0] == 0:
+        x: int = mouse.position[0];
+        y: int = mouse.position[1];
+        if x == 0 and pressCount[0] == 0: mouse.position = (screen[0] - 2, y);
+        elif x == screen[0] - 1 and pressCount[0] == 0: mouse.position = (1, y);
+        if y == 0 and pressCount[0] == 0: mouse.position = (x, screen[1] - 2);
+        elif y == screen[1] - 1 and pressCount[0] == 0: mouse.position = (x, 1);
     time.sleep(0.01);
