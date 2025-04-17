@@ -90,7 +90,7 @@ def rayCast(monitors, x, y, dir) -> tuple[int, int]:
             if not (mon.y <= fy < mon.h):
                 continue
             if fx is None or mon.x < fx:
-                fx = mon.x + 2
+                fx = mon.x + 1
     elif dir == 'u':
         fx = x
         for mon in monitors:
@@ -104,7 +104,7 @@ def rayCast(monitors, x, y, dir) -> tuple[int, int]:
             if not (mon.x <= fx < mon.w):
                 continue
             if fy is None or mon.y < fy:
-                fy = mon.y + 2
+                fy = mon.y + 1
     return (fx, fy)
 
 def outerScreen(monitors, x, y) -> RECT:
