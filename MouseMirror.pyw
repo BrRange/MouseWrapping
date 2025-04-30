@@ -66,11 +66,11 @@ def getScreenMerge(monitors):
     for i, mon in enumerate(monitors):
         if i < len(monitors) - 1:
             next_mon = monitors[i + 1]
-            if mon.x + mon.w == next_mon.x:
+            if mon.w == next_mon.x:
                 y_overlap_start = max(mon.y, next_mon.y)
-                y_overlap_end = min(mon.y + mon.h, next_mon.y + next_mon.h)
+                y_overlap_end = min(mon.h, next_mon.h)
                 if y_overlap_start < y_overlap_end:
-                    mergeInt.append(((mon.x + mon.w - 1, y_overlap_start), (mon.x + mon.w - 1, y_overlap_end)))
+                    mergeInt.append(((mon.w - 1, y_overlap_start), (mon.w - 1, y_overlap_end)))
                     mergeInt.append(((next_mon.x, y_overlap_start), (next_mon.x, y_overlap_end)))
     return mergeInt
 
