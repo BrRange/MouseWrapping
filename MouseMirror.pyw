@@ -1,22 +1,16 @@
 import ctypes, time;
 from ctypes import wintypes;
+import subprocess;
+import sys;
 
-goodToGo = True;
-async def importCheck():
-    import pip;
-    await pip.main(['install', 'pynput']);
-    goodToGo = True;
 try:
     import pynput;
-except ModuleNotFoundError:
-    goodToGo = False;
-    importCheck();
-    while not goodToGo:
-        time.sleep(5);
+except:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "pynput"]);
     import pynput;
 
-user = ctypes.windll.user32
-ctypes.windll.shcore.SetProcessDpiAwareness(2)
+user = ctypes.windll.user32;
+ctypes.windll.shcore.SetProcessDpiAwareness(2);
 
 class RECT(ctypes.Structure):
     _fields_ = [
@@ -26,7 +20,7 @@ class RECT(ctypes.Structure):
         ("h", wintypes.LONG),
     ]
 
-monitors: list[RECT] = []
+monitors: list[RECT] = [];
 
 MONITORENUMPROC = ctypes.WINFUNCTYPE(
     wintypes.BOOL,
@@ -34,15 +28,15 @@ MONITORENUMPROC = ctypes.WINFUNCTYPE(
     wintypes.HDC,
     ctypes.POINTER(RECT),
     wintypes.LPARAM
-)
+);
 
 @MONITORENUMPROC
 def monitor_enum_proc(hMonitor, hdcMonitor, lprcMonitor, dwData):
-    rect = lprcMonitor.contents
-    monitors.append(RECT(rect.x, rect.y, rect.w, rect.h))
-    return True
+    rect = lprcMonitor.contents;
+    monitors.append(RECT(rect.x, rect.y, rect.w, rect.h));
+    return True;
 
-user.EnumDisplayMonitors(0, 0, monitor_enum_proc, 0)
+user.EnumDisplayMonitors(0, 0, monitor_enum_proc, 0);
 
 mouse = pynput.mouse.Controller();
 global pressCount;
@@ -55,7 +49,7 @@ def appendPresses(x, y, button, isPressed):
         pressCount[0] -= 1;
 
 def sayCoords(x, v):
-    print(x, y)
+    print(x, y);
 
 mouseEar = pynput.mouse.Listener(on_click=appendPresses);
 mouseEar.start();
@@ -65,80 +59,80 @@ def getScreenMerge(monitors):
 
     for i, mon in enumerate(monitors):
         if i < len(monitors) - 1:
-            next_mon = monitors[i + 1]
+            next_mon = monitors[i + 1];
             if mon.w == next_mon.x:
-                y_overlap_start = max(mon.y, next_mon.y)
-                y_overlap_end = min(mon.h, next_mon.h)
+                y_overlap_start = max(mon.y, next_mon.y);
+                y_overlap_end = min(mon.h, next_mon.h);
                 if y_overlap_start < y_overlap_end:
-                    mergeInt.append(((mon.w - 1, y_overlap_start), (mon.w - 1, y_overlap_end)))
-                    mergeInt.append(((next_mon.x, y_overlap_start), (next_mon.x, y_overlap_end)))
-    return mergeInt
+                    mergeInt.append(((mon.w - 1, y_overlap_start), (mon.w - 1, y_overlap_end)));
+                    mergeInt.append(((next_mon.x, y_overlap_start), (next_mon.x, y_overlap_end)));
+    return mergeInt;
 
 def rayCast(monitors, x, y, dir) -> tuple[int, int]:
-    fx = None
-    fy = None
+    fx = None;
+    fy = None;
     if dir == 'l':
-        fy = y
+        fy = y;
         for mon in monitors:
             if not (mon.y <= fy < mon.h):
-                continue
+                continue;
             if fx is None or mon.w > fx:
-                fx = mon.w - 2
+                fx = mon.w - 2;
     elif dir == 'r':
-        fy = y
+        fy = y;
         for mon in monitors:
             if not (mon.y <= fy < mon.h):
-                continue
+                continue;
             if fx is None or mon.x < fx:
-                fx = mon.x + 1
+                fx = mon.x + 1;
     elif dir == 'u':
-        fx = x
+        fx = x;
         for mon in monitors:
             if not (mon.x <= fx < mon.w):
-                continue
+                continue;
             if fy is None or mon.h > fy:
-                fy = mon.h - 2
+                fy = mon.h - 2;
     elif dir == 'd':
-        fx = x
+        fx = x;
         for mon in monitors:
             if not (mon.x <= fx < mon.w):
-                continue
+                continue;
             if fy is None or mon.y < fy:
-                fy = mon.y + 1
-    return (fx, fy)
+                fy = mon.y + 1;
+    return (fx, fy);
 
 def outerScreen(monitors, x, y) -> RECT:
     for mon in monitors:
         if mon.x <= x < mon.w and mon.y <= y < mon.h:
-            return mon
+            return mon;
     
 def getCollSide(mon, x, y) -> str:
-    dir = ''
+    dir = '';
     if x == mon.x:
-        dir = 'l'
+        dir = 'l';
     elif x == mon.w - 1:
-        dir = 'r'
+        dir = 'r';
     elif y == mon.y:
-        dir = 'u'
+        dir = 'u';
     elif y == mon.h - 1:
-        dir = 'd'
-    return dir
+        dir = 'd';
+    return dir;
 
 def atMerge(merges, x, y):
     for merge in merges:
         if merge[0][0] <= x <= merge[1][0] and merge[0][1] <= y <= merge[1][1]:
-            return True
-    return False
+            return True;
+    return False;
 
-merges = getScreenMerge(monitors)
-print("Found screen merges:", merges)
+merges = getScreenMerge(monitors);
+print("Found screen merges:", merges);
 
 while True:
     if pressCount[0] == 0:
         x: int = mouse.position[0];
         y: int = mouse.position[1];
         if not atMerge(merges, x, y):
-            dir = getCollSide(outerScreen(monitors, x, y), x, y)
+            dir = getCollSide(outerScreen(monitors, x, y), x, y);
             if dir:
                 res = rayCast(monitors, x, y, dir);
                 mouse.move(res[0] - x, res[1] - y);
