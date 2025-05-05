@@ -1,5 +1,6 @@
-#include <stdio.h>
 #include <windows.h>
+#include <time.h>
+#include <stdio.h>
 
 typedef struct {
   LONG x, y, w, h;
@@ -13,8 +14,65 @@ Rect *monitors = 0;
 Merge *merges = 0;
 int monitorCount = 0, mergeCount = 0;
 
-BOOL CALLBACK MonitorEnumProc(HMONITOR hMon, HDC hdc, LPRECT lprc,
-                              LPARAM data) {
+/* Leave for now
+HICON iconHolder;
+WNDCLASS wc = {};
+HWND ghostWindow;
+NOTIFYICONDATA nData = {};
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+  switch (msg) {
+    case WM_APP + 1:
+    if (lParam == WM_RBUTTONUP) {
+      POINT pt;
+      GetCursorPos(&pt);
+      HMENU menu = CreatePopupMenu();
+      AppendMenu(menu, MF_STRING, 101, "Stop");
+      SetForegroundWindow(hwnd);
+      TrackPopupMenu(menu, TPM_RIGHTBUTTON, pt.x, pt.y, 0, hwnd, NULL);
+      DestroyMenu(menu);
+    }
+    break;
+    case WM_COMMAND:
+    if (LOWORD(wParam) == 1001) {
+      Shell_NotifyIcon(NIM_DELETE, &nData);
+      PostQuitMessage(0);
+    }
+    break;
+    case WM_DESTROY:
+    PostQuitMessage(0);
+    break;
+    default:
+    return DefWindowProc(hwnd, msg, wParam, lParam);
+  }
+  return 0;
+}
+
+void getTrayIcon(){
+  HINSTANCE Instance = GetModuleHandle(0);
+  iconHolder = LoadIcon(Instance, MAKEINTRESOURCE(101));
+  wc.lpfnWndProc = WndProc;
+  wc.hInstance = Instance;
+  wc.lpszClassName = "MouseMirrorWindowClass";
+  wc.style = CS_OWNDC;
+  RegisterClass(&wc);
+  
+  ghostWindow = CreateWindow(wc.lpszClassName, "", WS_OVERLAPPED,
+  0, 0, 0, 0,
+  0, 0, Instance, 0);
+  nData.cbSize = sizeof(NOTIFYICONDATA);
+  nData.hWnd = ghostWindow;
+  nData.uID = 1;
+  nData.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+  nData.uCallbackMessage = WM_APP + 1;
+  nData.hIcon = iconHolder;
+  strcpy(nData.szTip, "Mouse Mirror");
+  
+  Shell_NotifyIcon(NIM_ADD, &nData);
+}
+*/
+
+BOOL CALLBACK MonitorEnumProc(HMONITOR hMon, HDC hdc, LPRECT lprc, LPARAM data) {
   monitors = (Rect *)realloc(monitors, sizeof(Rect) * (monitorCount + 1));
   monitors[monitorCount].x = lprc->left;
   monitors[monitorCount].y = lprc->top;
@@ -34,10 +92,8 @@ void getScreenMerge(Rect *mons) {
         long y_overlap_end = min(mon.h, next_mon.h);
         if (y_overlap_start < y_overlap_end) {
           merges = realloc(merges, (mergeCount + 2) * sizeof(Merge));
-          merges[mergeCount] =
-              (Merge){mon.w - 1, y_overlap_start, mon.w - 1, y_overlap_end};
-          merges[mergeCount] =
-              (Merge){next_mon.x, y_overlap_start, next_mon.x, y_overlap_end};
+          merges[mergeCount] = (Merge) {mon.w - 1, y_overlap_start, mon.w - 1, y_overlap_end};
+          merges[mergeCount + 1] = (Merge) {next_mon.x, y_overlap_start, next_mon.x, y_overlap_end};
           mergeCount += 2;
         }
       }
@@ -112,13 +168,13 @@ Rect outerScreen(Rect *mons, int x, int y) {
 }
 
 char getCollSide(Rect mon, int x, int y) {
-  if (x == mon.x)
+  if (x <= mon.x)
     return 'l';
-  if (x == mon.w - 1)
+  if (x >= mon.w - 1)
     return 'r';
-  if (y == mon.y)
+  if (y <= mon.y)
     return 'u';
-  if (y == mon.h - 1)
+  if (y >= mon.h - 1)
     return 'd';
   return '\0';
 }
@@ -126,8 +182,7 @@ char getCollSide(Rect mon, int x, int y) {
 BOOL atMerge(Merge *mrgs, int x, int y) {
   for (int i = 0; i < mergeCount; i++) {
     Merge mrg = mrgs[i];
-    if (mrg.start.x <= x && x <= mrg.end.x && mrg.start.y <= y &&
-        y <= mrg.end.y)
+    if (mrg.start.x <= x && x <= mrg.end.x && mrg.start.y <= y && y <= mrg.end.y)
       return 1;
   }
   return 0;
@@ -144,7 +199,7 @@ int isMousePressed() {
 }
 
 int escapeSequence() {
-  return GetAsyncKeyState(VK_ESCAPE) & 0x8001;
+  return GetAsyncKeyState(VK_ESCAPE) & 0x8000;
 }
 
 int main() {
@@ -160,19 +215,19 @@ int main() {
   for (i = 0; i < mergeCount; i++)
     printf("Merge %i: (%li, %li) -> (%li, %li)", i, merges[i].start.x, merges[i].start.y, merges[i].end.x, merges[i].end.y);
 
-  i = 0;
   char dir;
+  clock_t elapse = clock();
+  POINT pt;
 
   while (1) {
     if (escapeSequence()) {
       i++;
-      if (i >= 200)
-        break;
+      if (clock() - elapse >= 3 * CLOCKS_PER_SEC) break;
     } else {
-      i = 0;
+      elapse = clock();
     }
     if (!isMousePressed()) {
-      POINT pt = getMousePos();
+      pt = getMousePos();
       if (!atMerge(merges, pt.x, pt.y)) {
         dir = getCollSide(outerScreen(monitors, pt.x, pt.y), pt.x, pt.y);
         if (dir) rayCast(monitors, pt.x, pt.y, dir);
