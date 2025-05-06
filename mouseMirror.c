@@ -87,13 +87,33 @@ void getScreenMerge(Rect *mons) {
     for (int j = i + 1; j < monitorCount; j++) {
       Rect mon = mons[i];
       Rect next_mon = mons[j];
-      if (mon.w == next_mon.x) {
+      if (mon.w == next_mon.x || mon.x == next_mon.w) {
         long y_overlap_start = max(mon.y, next_mon.y);
         long y_overlap_end = min(mon.h, next_mon.h);
-        if (y_overlap_start < y_overlap_end) {
+        if (y_overlap_start <= y_overlap_end) {
           merges = realloc(merges, (mergeCount + 2) * sizeof(Merge));
-          merges[mergeCount] = (Merge) {mon.w - 1, y_overlap_start, mon.w - 1, y_overlap_end};
-          merges[mergeCount + 1] = (Merge) {next_mon.x, y_overlap_start, next_mon.x, y_overlap_end};
+          if (mon.w == next_mon.x){
+            merges[mergeCount] = (Merge) {mon.w - 1, y_overlap_start, mon.w - 1, y_overlap_end};
+            merges[mergeCount + 1] = (Merge) {next_mon.x, y_overlap_start, next_mon.x, y_overlap_end};
+          } else {
+            merges[mergeCount] = (Merge) {mon.x, y_overlap_start, mon.x, y_overlap_end};
+            merges[mergeCount + 1] = (Merge) {next_mon.w - 1, y_overlap_start, next_mon.w - 1, y_overlap_end};
+          }
+          mergeCount += 2;
+        }
+      }
+      else if (mon.h == next_mon.y || mon.y == next_mon.h) {
+        long x_overlap_start = min(mon.x, next_mon.x);
+        long x_overlap_end = max(mon.w, next_mon.w);
+        if (x_overlap_start <= x_overlap_end) {
+          merges = realloc(merges, (mergeCount + 2) * sizeof(Merge));
+          if (mon.h == next_mon.y){
+            merges[mergeCount] = (Merge) {x_overlap_start, mon.h - 1, x_overlap_end, mon.h - 1};
+            merges[mergeCount + 1] = (Merge) {x_overlap_start, next_mon.y, x_overlap_end, next_mon.y};
+          } else {
+            merges[mergeCount] = (Merge) {x_overlap_start, mon.y, x_overlap_end, mon.y};
+            merges[mergeCount + 1] = (Merge) {x_overlap_start, next_mon.h - 1, x_overlap_end, next_mon.h - 1};
+          }
           mergeCount += 2;
         }
       }
@@ -209,12 +229,14 @@ int main() {
 
   printf("Found %d monitor%c\n", monitorCount, monitorCount == 1 ? '\0' : 's');
   for (i = 0; i < monitorCount; i++)
-    printf("Monitor %i: (%lu %lu %lu %lu)\n", i, monitors[i].x, monitors[i].y, monitors[i].w, monitors[i].h);
+    printf("Monitor %i: (%li %li %li %li)\n", i, monitors[i].x, monitors[i].y, monitors[i].w, monitors[i].h);
+  printf("\n");
+  getScreenMerge(monitors);
 
   printf("Found %d merge%c\n", mergeCount, mergeCount == 1 ? '\0' : 's');
   for (i = 0; i < mergeCount; i++)
-    printf("Merge %i: (%li, %li) -> (%li, %li)", i, merges[i].start.x, merges[i].start.y, merges[i].end.x, merges[i].end.y);
-
+    printf("Merge %i: (%li, %li) -> (%li, %li)\n", i, merges[i].start.x, merges[i].start.y, merges[i].end.x, merges[i].end.y);
+  printf("\n");
   char dir;
   clock_t elapse = clock();
   POINT pt;
