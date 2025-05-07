@@ -121,7 +121,7 @@ void getScreenMerge(Rect *mons) {
 }
 
 void rayCast(Rect *mons, int x, int y, char dir) {
-  BOOL isSet;
+  BOOL isSet = 0;
   int fx = 0, fy = 0;
   Rect mon;
   switch (dir) {
